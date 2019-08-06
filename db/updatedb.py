@@ -43,26 +43,26 @@ docs = {
 
 PATTERNS = {
     "Go": {
-        "doc": r'\sid="{name}">(.*?)<(?:h[1234]|div)\b',
+        "alias": r"^(?:bufio|builtin|bytes|context|crypto|encoding|errors|expvar|flag|fmt|hash|html|image|io|log|math|mime|net|os|path|plugin|reflect|regexp|runtime|sort|strconv|strings|sync|syscall|testing|time|unicode|unsafe)\.",
         "descr": r"<p>(.*?)</p>",
+        "doc": r'\sid="{name}">(.*?)<(?:h[1234]|div)\b',
         "syntax": r"<pre\b[^>]*>(.*?)</pre>",
-        "alias": r"^(bufio|builtin|bytes|context|crypto|encoding|errors|expvar|flag|fmt|hash|html|image|io|log|math|mime|net|os|path|plugin|reflect|regexp|runtime|sort|strconv|strings|sync|syscall|testing|time|unicode|unsafe)\.",
     },
     "PHP": {
-        # "skip" : '.*::',
-        "syntax": r"methodsynopsis.*?>(.*?)</pre>",
+        # "skip" : r".*::",
         "descr": r"rdfs-comment.*?>(.*?)</p>",
         "params": r"<dt>(.*?)<dd>(.*?)</dd>",
+        "syntax": r"methodsynopsis.*?>(.*?)</pre>",
     },
     "Python": {
+        "alias": r"^(?:str|dict|int|float|list|bytes|bytearray|array\.array|array|re\.match)\.",
         "descr": r"<p>(.*?)</p>",
         "doc": r'\sid="{name}">(.*?)</dd>',
         "syntax": r"<code>(.*?)</code>",
-        "alias": r"^(str|dict|int|float|list|bytes|bytearray|array\.array|array|re\.match)\.",
     },
     "Javascript": {
-        "alias": r"^([aA]rray|[sS]tring|[dD]ate|[fF]unction|[oO]bject|[rR]egExp|[nN]umber|window)\.",
-        "descr": r"\bh1.*?<p>(.*?)</p>",
+        "alias": r"^(?:[aA]rray|[sS]tring|[dD]ate|[fF]unction|[oO]bject|[rR]egExp|[nN]umber|window)\.",
+        "descr": r"<h1[\s>].*?<p>(.*?)</p>",
         "params": r"(?:<dt>(.*?)<dd>(.*?)</dd>|<li>.{5,30}<strong>(.*?)</strong>(.*?)</li>)",
         "syntax": r"(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
     },
