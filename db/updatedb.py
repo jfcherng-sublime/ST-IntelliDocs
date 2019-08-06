@@ -1,155 +1,221 @@
-from __future__ import print_function
-import os, re, json
+import html
+import io
+import json
+import os
+import re
+import sys
 
-# Update DB from local devdocs.io dump: https://github.com/Thibaut/devdocs
-# (Tested on Python 2.7 win7)
+# Update DB from local devdocs.io dump:
+#
+#     https://github.com/Thibaut/devdocs
+#
+# Devdocs offline packages:
+#
+#     http://dl.devdocs.io/dom.tar.gz
+#     http://dl.devdocs.io/javascript.tar.gz
+#     http://dl.devdocs.io/jquery.tar.gz
+#     http://dl.devdocs.io/php.tar.gz
+#     http://dl.devdocs.io/python~3.7.tar.gz
+#
+# Download above tarballs and decompress them to have the following directory structure:
+#
+#    docs/
+#    |-- dom/
+#    |-- javascript/
+#    |-- jquery/
+#    |-- php/
+#    |-- python/
 
-path_devdocs = "../var/devdocs"
-path_db = "."
+__DIR__ = os.path.dirname(os.path.abspath(__file__))
+os.chdir(__DIR__)
+
+docs_dir = "docs"
+
 docs = {
-	"php": "PHP",
-	"python": "Python",
-	"javascript": "Javascript",
-	"dom": "Javascript",
-	"jquery": "Javascript"
+    "dom": "Javascript",
+    "javascript": "Javascript",
+    "jquery": "Javascript",
+    "php": "PHP",
+    "python": "Python",
 }
 
-patterns = {
-	"PHP": {
-		#"skip"	: '.*::',
-		"syntax": ".*?methodsynopsis.*?>(.*?)</div>",
-		"descr"	: ".*rdfs-comment.*?>(.*?)</p>",
-		"params": "<dt>(.*?)<dd>(.*?)</dd>"
-	},
-	"Python": {
-		"doc"	: '.*(<dt.*?id=.%(name)s[^a-zA-Z]*?>.*?</dd>)',
-		"alias"	: '^(str|dict|int|float|list|bytes|bytearray|array.array|array|re.match)\.',
-		"syntax": "<dt.*?>(.*?)</dt>",
-		"descr"	: ".*?<p>(.*?)</p>",
-	},
-	"Javascript": {
-		"alias"	: '^(Array|String|Date|Function|Object|RegExp|Number|window)\.',
-		"syntax": ".*?(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
-		"descr"	: ".*?h1.*?<p>(.*?)</p>",
-		"params": "(?:<dt>(.*?)<dd>(.*?)</dd>|<li>.{5,30}<strong>(.*?)</strong>(.*?)</li>)"
-	}
+PATTERNS = {
+    "PHP": {
+        # "skip" : '.*::',
+        "syntax": r"methodsynopsis.*?>(.*?)</pre>",
+        "descr": r"rdfs-comment.*?>(.*?)</p>",
+        "params": r"<dt>(.*?)<dd>(.*?)</dd>",
+    },
+    "Python": {
+        # <dt id="asyncio.new_event_loop">
+        "doc": r'<dt id="{name}">(.*?)</dd>',
+        "alias": r"^(str|dict|int|float|list|bytes|bytearray|array.array|array|re.match)\.",
+        "syntax": r"<code>(.*?)</code>",
+        "descr": r"<p>(.*?)</p>",
+    },
+    "Javascript": {
+        "alias": r"^([aA]rray|[sS]tring|[dD]ate|[fF]unction|[oO]bject|[rR]egExp|[nN]umber|window)\.",
+        "syntax": r"(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
+        "descr": r"\bh1.*?<p>(.*?)</p>",
+        "params": r"(?:<dt>(.*?)<dd>(.*?)</dd>|<li>.{5,30}<strong>(.*?)</strong>(.*?)</li>)",
+    },
 }
 
-def stripTags(s):
-	s = re.sub("<[a-zA-Z/]+.*?>", "", s)
-	s = s.replace("&amp;", "&")
-	s = s.replace("&gt;", ">")
-	s = s.replace("&lt;", "<")
-	s = s.replace("\n", "")
-	s = s.strip()
-	return s
 
-class Parser:
-	def __init__(self, directory, name):
-		self.name = name
-		self.directory = directory
-		self.patterns = patterns[name]
-		path = path_devdocs+"/public/docs/"+directory+"/"
-		self.updateDoc(path)
+def print_now(*args, **kargs) -> None:
+    print(*args, **kargs)
+    sys.stdout.flush()
 
 
-	def getPattern(self, pattern_name):
-		self.patterns[pattern_name].format(name = entry["name"])
+def html_to_plain_text(s: str) -> str:
+    # replace all (consecutive) whitespaces with a single space
+    s = re.sub(r"\s+", " ", s)
+    # remove html tags
+    s = re.sub(r"</?[^>]*>", "", s)
+
+    return html.unescape(s).strip()
 
 
-	def getDescr(self, doc):
-		match_descr = re.match(self.patterns["descr"], doc, re.DOTALL)
-		if match_descr:
-			descr = match_descr.group(1)
-		else:
-			descr = ""
-		return stripTags(descr)
+class LanguageParser:
+    def __init__(self, language: str, st_syntax: str):
+        # such as javascript, jquery
+        self.language = language
+        # such Javascript (both javascript and jQuery belong to)
+        self.st_syntax = st_syntax
+
+        self.doc_dir = os.path.join(docs_dir, language)
+        self.output_db_path = st_syntax + ".json"
+        self.patterns = PATTERNS[st_syntax]
+        self.file_caches = {}
+
+        self.update_doc()
+
+    def get_pattern(self, pattern_name: str):
+        return self.patterns[pattern_name]
+
+    def get_descr(self, doc: str) -> str:
+        match_descr = re.search(self.patterns["descr"], doc, re.DOTALL)
+
+        if match_descr:
+            descr = match_descr.group(1)
+        else:
+            descr = ""
+
+        return html_to_plain_text(descr).strip()
+
+    def get_params(self, doc: str) -> list:
+        params = []
+
+        if "params" not in self.patterns:
+            return params
+
+        for match in re.findall(self.patterns["params"], doc, re.DOTALL):
+            name, descr = [group for group in match if group]
+            descr = re.sub(r"^(.{30,200}?)(\. |$).*", r"\1\2", html_to_plain_text(descr))
+            params.append({"name": html_to_plain_text(name), "descr": descr})
+
+        return params
+
+    def get_doc_file_content(self, entry_path: str) -> str:
+        doc_file = re.sub(r"#.*", "", entry_path.replace("*", "_")) + ".html"
+        doc_path = os.path.join(self.doc_dir, doc_file)
+
+        try:
+            if doc_path not in self.file_caches:
+                with io.open(doc_path, "r", encoding="UTF-8") as f:
+                    self.file_caches[doc_path] = f.read()
+
+            doc = self.file_caches[doc_path]
+        except Exception as err:
+            print(err)
+            doc = ""
+
+        return doc
+
+    def get_doc_index_info(self) -> dict:
+        with io.open(os.path.join(self.doc_dir, "index.json"), "r", encoding="UTF-8") as f:
+            return json.load(f)
+
+    def update_doc(self):
+        doc_index_info = self.get_doc_index_info()
+
+        try:
+            # open the previous db so that we can append docs between different language
+            # such append jQuery docs to Javascript docs
+            with io.open(self.output_db_path, "r", encoding="UTF-8") as f:
+                db = json.load(f)
+        except Exception:
+            db = {}
+
+        no_match = []
+
+        for entry in doc_index_info["entries"]:
+            entry["name"] = entry["name"].replace(" (class)", "").strip("().")
+
+            if "skip" in self.patterns and re.search(self.patterns["skip"], entry["name"]):
+                print_now("S", end="")
+                continue
+
+            doc = self.get_doc_file_content(entry["path"])
+
+            # get the real doc part from the HTML content
+            if "doc" in self.patterns:
+                m = re.search(
+                    self.patterns["doc"].format(name=re.escape(entry["name"])), doc, re.DOTALL
+                )
+
+                doc = m.group(1) if m else ""
+
+            m = re.search(self.patterns["syntax"], doc, re.DOTALL)
+
+            # Add to db
+            if m:
+                syntax = html_to_plain_text(m.group(1))
+                syntax = syntax.replace(")Returns:", ") Returns:")  # jQuery doc returns fix
+
+                # multiple syntax possible
+                if ");" in syntax:
+                    parts = syntax.split(");")
+                    syntax = ");\n or ".join([part for part in parts if part.strip()]) + ");"
+
+                db[entry["name"]] = {
+                    "name": entry["name"],
+                    "path": self.language + "/" + entry["path"],
+                    "type": entry["type"],
+                    "syntax": syntax,
+                    "descr": self.get_descr(doc),
+                    "params": self.get_params(doc),
+                }
+
+                # Create alias like str.replace -> replace
+                if "alias" in self.patterns:
+                    name_alias = re.sub(self.patterns["alias"], "", entry["name"])
+                    if name_alias != entry["name"]:
+                        db[name_alias] = db[entry["name"]]
+
+                        print("A", end="")
+
+                # jQuery.* -> $.* alias
+                if entry["name"].startswith("jQuery"):
+                    name_alias = entry["name"].replace("jQuery.", "$.")
+                    db[name_alias] = db[entry["name"]]
+
+                print_now(".", end="")
+
+            else:
+                no_match.append(entry["name"])
+
+                print_now("-", end="")
+
+        with io.open(self.output_db_path, "w", encoding="UTF-8", newline="\n") as f:
+            json.dump(db, f, sort_keys=True, indent=4, ensure_ascii=False)
+
+        if no_match:
+            print("No match:", no_match)
+
+        print("Done!")
 
 
-	def getParams(self, doc):
-		params = []
-		if "params" not in self.patterns: return params
-		for match in re.findall(self.patterns["params"], doc, re.DOTALL):
-			name, descr = [group for group in match if group]
-			descr = re.sub("^(.{30,200}?)(\. |$).*", "\\1\\2", stripTags(descr))
-			params.append({"name": stripTags(name), "descr": descr})
-		return params
-
-
-	def updateDoc(self, path):
-		index = json.load(open(path+"/index.json"))
-		db = json.load(open(path_db+"/"+self.name+".json"))
-		no_match = []
-		for entry in index["entries"]:
-			# Open doc file
-			entry["name"] = entry["name"].replace(" (class)", "").strip("().")
-			if "skip" in self.patterns and re.match(self.patterns["skip"], entry["name"]): 
-				print("S", end="")
-				continue
-
-			path_doc = path+re.sub("#.*$", "", entry["path"])+".html"
-			try:
-				doc = open(path_doc).read()
-			except Exception, err:
-				print(err)
-
-			#if entry["name"] != "removeClass": continue # DEBUG
-
-			if "doc" in self.patterns: # Prefilter doc
-				match = re.match(self.patterns["doc"] % entry, doc, re.DOTALL)
-				if match:
-					doc = match.group(1)
-				else:
-					doc = ""
-
-			# Match sytax
-			match = re.match(self.patterns["syntax"], doc, re.DOTALL)
-
-			# Add to db
-			if match:
-				syntax = stripTags(match.group(1))
-				syntax = syntax.replace(")Returns:", ") Returns:") # jQuery doc returns fix
-
-				#multiple syntax possible
-				if ");" in syntax:
-					parts = syntax.split(");")
-					syntax = ");\n or ".join( [part for part in parts if part.strip()] )+");"
-
-				db[entry["name"]] = {
-					"name"	: entry["name"],
-					"path"	: self.directory+"/"+entry["path"],
-					"type"	: entry["type"],
-					"syntax": syntax,
-					"descr"	: self.getDescr(doc),
-					"params": self.getParams(doc)
-				}
-				print(".", end="")
-
-				# Create alias like str.replace -> replace
-				if "alias" in self.patterns:
-					name_alias = re.sub(self.patterns["alias"], "", entry["name"])
-					if name_alias != entry["name"]:
-						db[name_alias] = db[entry["name"]]
-						print("A", end="")
-
-				# jQuery.* -> $.* alias
-				if entry["name"].startswith("jQuery"):
-					name_alias = entry["name"].replace("jQuery.", "$.")
-					db[name_alias] = db[entry["name"]]
-
-			else:
-				print("-", end="")
-				no_match.append(entry["name"])
-		open(path_db+"/"+self.name+".json", "w").write(json.dumps(db, sort_keys=True, indent=4))
-		print("No match:", no_match)
-		print("Done!")
-
-# Create empty files
-for directory, name in docs.items():
-	open(path_db+"/"+name+".json", "w").write("{}")
-
-
-# Fill db
-for directory, name in docs.items():
-	print(" * Updating", directory, "->", name)
-	Parser(directory, name)
+for language, st_syntax in docs.items():
+    print(" * Updating {} -> {}".format(language, st_syntax))
+    LanguageParser(language, st_syntax)
