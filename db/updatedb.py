@@ -12,6 +12,7 @@ import sys
 # Devdocs offline packages:
 #
 #     http://dl.devdocs.io/dom.tar.gz
+#     http://dl.devdocs.io/go.tar.gz
 #     http://dl.devdocs.io/javascript.tar.gz
 #     http://dl.devdocs.io/jquery.tar.gz
 #     http://dl.devdocs.io/php.tar.gz
@@ -33,6 +34,7 @@ docs_dir = "docs"
 
 docs = {
     "dom": "Javascript",
+    "go": "Go",
     "javascript": "Javascript",
     "jquery": "Javascript",
     "php": "PHP",
@@ -40,6 +42,12 @@ docs = {
 }
 
 PATTERNS = {
+    "Go": {
+        "doc": r'\sid="{name}">(.*?)<(?:h[1234]|div)\b',
+        "descr": r"<p>(.*?)</p>",
+        "syntax": r"<pre\b[^>]*>(.*?)</pre>",
+        "alias": r"^(bufio|builtin|bytes|context|crypto|encoding|errors|expvar|flag|fmt|hash|html|image|io|log|math|mime|net|os|path|plugin|reflect|regexp|runtime|sort|strconv|strings|sync|syscall|testing|time|unicode|unsafe)\.",
+    },
     "PHP": {
         # "skip" : '.*::',
         "syntax": r"methodsynopsis.*?>(.*?)</pre>",
@@ -47,17 +55,16 @@ PATTERNS = {
         "params": r"<dt>(.*?)<dd>(.*?)</dd>",
     },
     "Python": {
-        # <dt id="asyncio.new_event_loop">
-        "doc": r'<dt id="{name}">(.*?)</dd>',
-        "alias": r"^(str|dict|int|float|list|bytes|bytearray|array.array|array|re.match)\.",
-        "syntax": r"<code>(.*?)</code>",
         "descr": r"<p>(.*?)</p>",
+        "doc": r'\sid="{name}">(.*?)</dd>',
+        "syntax": r"<code>(.*?)</code>",
+        "alias": r"^(str|dict|int|float|list|bytes|bytearray|array\.array|array|re\.match)\.",
     },
     "Javascript": {
         "alias": r"^([aA]rray|[sS]tring|[dD]ate|[fF]unction|[oO]bject|[rR]egExp|[nN]umber|window)\.",
-        "syntax": r"(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
         "descr": r"\bh1.*?<p>(.*?)</p>",
         "params": r"(?:<dt>(.*?)<dd>(.*?)</dd>|<li>.{5,30}<strong>(.*?)</strong>(.*?)</li>)",
+        "syntax": r"(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
     },
 }
 
@@ -106,7 +113,7 @@ class LanguageParser:
     def get_params(self, doc: str) -> list:
         params = []
 
-        if "params" not in self.patterns:
+        if "params" not in self.patterns or not self.patterns["params"]:
             return params
 
         for match in re.findall(self.patterns["params"], doc, re.DOTALL):
@@ -150,7 +157,17 @@ class LanguageParser:
         no_match = []
 
         for entry in doc_index_info["entries"]:
-            entry["name"] = entry["name"].replace(" (class)", "").strip("().")
+            if "/" in entry["name"]:
+                print_now("S", end="")
+                continue
+
+            entry["name"] = (
+                entry["name"]
+                .replace(" constants", "")
+                .replace(" variables", "")
+                .replace(" (class)", "")
+                .strip("().")
+            )
 
             if "skip" in self.patterns and re.search(self.patterns["skip"], entry["name"]):
                 print_now("S", end="")
@@ -160,9 +177,12 @@ class LanguageParser:
 
             # get the real doc part from the HTML content
             if "doc" in self.patterns:
-                m = re.search(
-                    self.patterns["doc"].format(name=re.escape(entry["name"])), doc, re.DOTALL
-                )
+                if "#" in entry["path"]:
+                    html_id = re.search(r"#(.*)", entry["path"]).group(1)
+                else:
+                    html_id = entry["name"]
+
+                m = re.search(self.patterns["doc"].format(name=re.escape(html_id)), doc, re.DOTALL)
 
                 doc = m.group(1) if m else ""
 

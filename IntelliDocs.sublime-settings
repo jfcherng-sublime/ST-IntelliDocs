@@ -1,6 +1,7 @@
 {
     "help_links": {
         ".*": "http://devdocs.io/{path}s",
+        "go": "https://golang.org/search?q={name}",
         "php": "http://php.net/manual-lookup.php?pattern={name}s",
         "python": "http://docs.python.org/3/search.html?q={name}s",
         "jquery": "http://api.jquery.com/{name}s",
@@ -11,5 +12,6 @@
         "source.js": "Javascript",
         "source.coffee": "Javascript",
         "source.python": "Python",
+        "source.go": "Go",
     },
 }
