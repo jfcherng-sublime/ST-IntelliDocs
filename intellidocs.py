@@ -72,12 +72,13 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
                 menus.append(found["syntax"])
 
                 # Description
-                for descr in re.sub(
-                    r"(.{80,100}[\.]) ", r"\1|||", cut_off_string(found["descr"], 350)
-                ).split(
-                    "|||"
-                ):  # Spit long description lines
-                    menus.append(" " + descr)
+                if found["descr"]:
+                    for descr in re.sub(
+                        r"(.{80,100}[\.]) ", r"\1|||", cut_off_string(found["descr"], 350)
+                    ).split(
+                        "|||"
+                    ):  # Spit long description lines
+                        menus.append(" " + descr)
 
                 # Parameters
                 if found["params"]:
