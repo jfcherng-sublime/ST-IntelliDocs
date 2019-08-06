@@ -41,13 +41,15 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit) -> None:
         # find db for lang
         lang = self.getLang()
+
         if lang not in self.cache:  # DEBUG disable cache: or 1 == 1
-            path_db = __DIR__ + "/db/%s.json" % lang
-            self.debug("Loaded intelliDocs db:", path_db)
-            if os.path.exists(path_db):
-                with io.open(path_db, encoding="UTF-8") as f:
-                    self.cache[lang] = json.load(f)
-            else:
+            try:
+                self.cache[lang] = json.loads(
+                    sublime.load_resource(
+                        "Packages/{package}/db/{lang}.json".format(package=__package__, lang=lang)
+                    )
+                )
+            except Exception:
                 self.cache[lang] = {}
 
         completions = self.cache[lang]
