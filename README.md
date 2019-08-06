@@ -9,6 +9,27 @@ Currently supported languages:
  - More soon :) (Suggest me your favorite language)
 
 
+## To use this plugin
+
+This plugin is not on Package Control yet. To install this, you can
+
+- Download the tarball from GitHub and decompress it to `Packages/`.
+- Or add a custom Package Control repository (recommended).
+
+  1. `Menu > Preferences > Package Control > Settings - User`:
+     Add the following:
+     ```js
+     "package_name_map": {
+       "Sublime-IntelliDocs": "-IntelliDocs"
+     },
+     "repositories": [
+       "https://github.com/jfcherng/Sublime-IntelliDocs",
+     ]
+     ```
+  1. `Menu > Preferences > Package Control > Install Package`:
+     Find `IntelliDocs` and install
+
+
 ## Changelog ##
  - 1.1.6 (2014-03-18)
    - Lookup key binded to F2 by default (thanks tlqmj!)
