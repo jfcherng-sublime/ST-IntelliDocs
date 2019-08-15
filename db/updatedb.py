@@ -15,6 +15,7 @@ import sys
 #     http://dl.devdocs.io/go.tar.gz
 #     http://dl.devdocs.io/javascript.tar.gz
 #     http://dl.devdocs.io/jquery.tar.gz
+#     http://dl.devdocs.io/love.tar.gz
 #     http://dl.devdocs.io/php.tar.gz
 #     http://dl.devdocs.io/python~3.7.tar.gz
 #
@@ -39,6 +40,7 @@ docs = {
     "jquery": "Javascript",
     "php": "PHP",
     "python": "Python",
+    "love": "Lua (Love)",
 }
 
 PATTERNS = {
@@ -65,6 +67,14 @@ PATTERNS = {
         "descr": r"<h1[\s>].*?<p>(.*?)</p>",
         "params": r"(?:<dt>(.*?)<dd>(.*?)</dd>|<li>.{5,30}<strong>(.*?)</strong>(.*?)</li>)",
         "syntax": r"(?:[sS]yntax|section).*?<(?:code|pre|span).*?>(.*?\).*?)</(?:p|pre|code|h2)>",
+    },
+    "Lua (Love)": {
+        # "skip" : r".*::",
+        "doc": r'((?:.(?!"Function_2"))+)',
+        "alias": r"^(?:enet|love\.audio|love\.event|love\.filesystem|love\.font|love\.graphics|love\.image|love\.joystick|love\.keyboard|love\.math|love\.mouse|love\.physics|love\.sound|love\.system|love\.thread|love\.timer|love\.touch|love\.video|love\.window|love|Lua)\.",
+        "descr": r"<p>(.*?)</p>",
+        "params": r'<dt>\s*<code>\s*<a [^>]+>((?:.(?!<dd>))*.)<dd>(.*?)</dd>',
+        "syntax": r'Synopsis</h3>\s*<pre [^>]+>([^<]+)',
     },
 }
 

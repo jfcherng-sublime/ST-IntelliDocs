@@ -3,6 +3,7 @@
         "go": "https://golang.org/search?q={name}",
         "javascript|dom": "https://developer.mozilla.org/en-US/search?topic=js&topic=html&topic=api&q={name}",
         "jquery": "https://api.jquery.com/{name}",
+        "love": "https://love2d.org/wiki/{name}",
         "php": "https://php.net/manual-lookup.php?pattern={name}",
         "python": "https://docs.python.org/3/search.html?q={name}",
         // fallback
@@ -12,6 +13,7 @@
         "source.coffee": "Javascript",
         "source.go": "Go",
         "source.js": "Javascript",
+        "source.lua.love": "Lua (Love)",
         "source.php": "PHP",
         "source.python": "Python",
     },
