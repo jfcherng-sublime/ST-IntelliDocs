@@ -82773,19 +82773,6 @@
         "syntax": "tidyNode tidy::head ( void )",
         "type": "HTML"
     },
-    "tidy::html": {
-        "descr": "Procedural style",
-        "name": "tidy::html",
-        "params": [
-            {
-                "descr": "The Tidy object.",
-                "name": "object"
-            }
-        ],
-        "path": "php/tidy.html",
-        "syntax": "tidyNode tidy::html ( void )",
-        "type": "HTML"
-    },
     "tidy::isXhtml": {
         "descr": "Procedural style",
         "name": "tidy::isXhtml",
