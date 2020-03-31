@@ -17,7 +17,7 @@ import sys
 #     http://dl.devdocs.io/jquery.tar.gz
 #     http://dl.devdocs.io/love.tar.gz
 #     http://dl.devdocs.io/php.tar.gz
-#     http://dl.devdocs.io/python~3.7.tar.gz
+#     http://dl.devdocs.io/python~3.8.tar.gz
 #
 # Download above tarballs and decompress them to have the following directory structure:
 #
