@@ -4,10 +4,9 @@ Quick function parameter help for Sublime 3.x.
 Currently supported languages:
 
 - Go
-- Javascript & DOM & jQuery
+- Javascript / DOM / jQuery
 - PHP
 - Python
-
 
 ## To use this plugin
 
@@ -21,16 +20,15 @@ This plugin is not on Package Control yet. To install this, you can
 
      ```js
      "package_name_map": {
-       "Sublime-IntelliDocs": "-IntelliDocs"
+       "Sublime-IntelliDocs": "IntelliDocs",
      },
      "repositories": [
-       "https://github.com/jfcherng/Sublime-IntelliDocs",
-     ]
+       "https://github.com/jfcherng/Sublime-IntelliDocs.git",
+     ],
      ```
 
   1. `Menu` > `Preferences` > `Package Control` > `Install Package`:
      Find `IntelliDocs` and install
-
 
 ## Features
 
@@ -38,39 +36,27 @@ This plugin is not on Package Control yet. To install this, you can
 - Function description
 - Parameter description
 - Last function hint stays in status bar
-- Open devdocs.io and other, customizable reference docs in browser
-
+- Open `devdocs.io` and other, customizable reference docs in browser
 
 ## Screenshots
 
+### Javascript / jQuery
 
-### Javascript & jQuery
-
-![Sublime Javascript hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/wiki/intellidocs-javascript.png)
-
+![Sublime Javascript hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-javascript.png)
 
 ### PHP
 
-![Sublime PHP hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/wiki/intellidocs-php.png)
-
+![Sublime PHP hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-php.png)
 
 ### Python
 
-![Sublime Python hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/wiki/intellidocs-python.png)
-
-
-## Installation
-
-- Download the [zip-ball](https://github.com/jfcherng/Sublime-IntelliDocs/archive/master.zip)
-  and unpack to `sublime\data\packages` or via [Package Control](https://packagecontrol.io)
-
+![Sublime Python hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-python.png)
 
 ## Usage
 
 - Set your cursor over a function or object you want to look up
-  and press <kbd>F2</kbd> to see relevant documentation.
-
+  and press <kbd>Ctrl + Alt + h</kbd> to see relevant documentation.
 
 ## Thanks
 
-- Wonderful devdocs.io for documents database.
+- Wonderful `devdocs.io` for documents database.
