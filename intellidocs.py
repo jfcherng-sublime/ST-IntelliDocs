@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import sublime
@@ -43,7 +42,7 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
 
         if lang not in self.cache:  # DEBUG disable cache: or 1 == 1
             try:
-                self.cache[lang] = json.loads(
+                self.cache[lang] = sublime.decode_value(
                     sublime.load_resource(
                         "Packages/{package}/db/{lang}.json".format(package=__package__, lang=lang)
                     )
