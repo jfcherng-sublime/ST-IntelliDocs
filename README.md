@@ -1,4 +1,4 @@
-# Sublime-IntelliDocs
+# ST-IntelliDocs
 
 Quick function parameter help for Sublime 3.x.
 Currently supported languages:
@@ -8,7 +8,7 @@ Currently supported languages:
 - PHP
 - Python
 
-## To use this plugin
+## Installation
 
 This plugin is not on Package Control yet. To install this, you can
 
@@ -20,10 +20,10 @@ This plugin is not on Package Control yet. To install this, you can
 
      ```js
      "package_name_map": {
-       "Sublime-IntelliDocs": "IntelliDocs",
+       "ST-IntelliDocs": "IntelliDocs",
      },
      "repositories": [
-       "https://github.com/jfcherng/Sublime-IntelliDocs.git",
+       "https://github.com/jfcherng-sublime/ST-IntelliDocs.git",
      ],
      ```
 
@@ -42,15 +42,15 @@ This plugin is not on Package Control yet. To install this, you can
 
 ### Javascript / jQuery
 
-![Sublime Javascript hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-javascript.png)
+![Sublime Javascript hints](https://raw.github.com/jfcherng-sublime/ST-IntelliDocs/master/docs/intellidocs-javascript.png)
 
 ### PHP
 
-![Sublime PHP hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-php.png)
+![Sublime PHP hints](https://raw.github.com/jfcherng-sublime/ST-IntelliDocs/master/docs/intellidocs-php.png)
 
 ### Python
 
-![Sublime Python hints](https://raw.github.com/jfcherng/Sublime-IntelliDocs/master/docs/intellidocs-python.png)
+![Sublime Python hints](https://raw.github.com/jfcherng-sublime/ST-IntelliDocs/master/docs/intellidocs-python.png)
 
 ## Usage
 
