@@ -1,6 +1,7 @@
 # ST-IntelliDocs
 
-Quick function parameter help for Sublime 3.x.
+Quick function parameter help for Sublime Text.
+
 Currently supported languages:
 
 - Go
@@ -10,25 +11,14 @@ Currently supported languages:
 
 ## Installation
 
-This plugin is not on Package Control yet. To install this, you can
+This plugin is not published on Package Control (and probably never will be).
 
-- Download the tarball from GitHub and decompress it to `Packages/`.
-- Or add a custom Package Control repository (recommended).
+To install this plugin via Package Control, you have to add a custom repository.
 
-  1. `Menu` > `Preferences` > `Package Control` > `Settings - User`:
-     Add the following:
-
-     ```js
-     "package_name_map": {
-       "ST-IntelliDocs": "IntelliDocs",
-     },
-     "repositories": [
-       "https://github.com/jfcherng-sublime/ST-IntelliDocs.git",
-     ],
-     ```
-
-  1. `Menu` > `Preferences` > `Package Control` > `Install Package`:
-     Find `IntelliDocs` and install
+1. Execute `Package Control: Add Repository` in the command palette.
+1. Add this custom repository: `https://raw.githubusercontent.com/jfcherng-sublime/ST-my-package-control/master/repository.json`
+1. Restart Sublime Text.
+1. You should be able to install this package with Package Control with the name `IntelliDocs`.
 
 ## Features
 
