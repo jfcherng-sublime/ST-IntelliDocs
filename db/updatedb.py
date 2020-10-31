@@ -73,8 +73,8 @@ PATTERNS = {
         "doc": r'((?:.(?!"Function_2"))+)',
         "alias": r"^(?:enet|love\.audio|love\.event|love\.filesystem|love\.font|love\.graphics|love\.image|love\.joystick|love\.keyboard|love\.math|love\.mouse|love\.physics|love\.sound|love\.system|love\.thread|love\.timer|love\.touch|love\.video|love\.window|love|Lua)\.",
         "descr": r"<p>(.*?)</p>",
-        "params": r'<dt>\s*<code>\s*<a [^>]+>((?:.(?!<dd>))*.)<dd>(.*?)</dd>',
-        "syntax": r'Synopsis</h3>\s*<pre [^>]+>([^<]+)',
+        "params": r"<dt>\s*<code>\s*<a [^>]+>((?:.(?!<dd>))*.)<dd>(.*?)</dd>",
+        "syntax": r"Synopsis</h3>\s*<pre [^>]+>([^<]+)",
     },
 }
 
@@ -173,10 +173,10 @@ class LanguageParser:
 
             entry["name"] = (
                 entry["name"]
-                .replace(" constants", "")
-                .replace(" variables", "")
-                .replace(" (class)", "")
-                .strip("().")
+                    .replace(" constants", "")
+                    .replace(" variables", "")
+                    .replace(" (class)", "")
+                    .strip("().")
             )
 
             if "skip" in self.patterns and re.search(self.patterns["skip"], entry["name"]):

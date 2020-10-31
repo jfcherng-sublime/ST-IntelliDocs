@@ -1,51 +1,50 @@
-import os
 import re
 import sublime
 import sublime_plugin
 import webbrowser
 
-__DIR__ = os.path.dirname(os.path.abspath(__file__))
+from typing import Any, Dict, List
+
+PACKAGE_NAME = __package__.split(".")[0]
 
 
 def cut_off_string(s: str, max_length: int = 160) -> str:
-    length = len(s)
-
-    if length <= max_length:
+    if len(s) <= max_length:
         return s
 
-    length = 0
-    words = s.split(" ")
+    delimiters_c = ",，.。、'\"＂ 　\t\r\n"
+    delimiters_l = "{｛[［<＜“「『《〈(（"
+    delimiters_r = "}｝]］>＞”」』》〉)）"
 
-    for i, word in enumerate(words):
-        length += len(word) + 1  # 1 for space
-        i += 1
+    spliter_re = re.compile(r"[{}]".format(delimiters_c + delimiters_l + delimiters_r))
 
-        if length >= max_length:
+    cut = 0
+    for part in spliter_re.split(s):
+        cut_new = cut + len(part)
+        if cut_new > max_length:
             break
+        cut = cut_new + 1  # 1 for delimiter
 
-    return " ".join(words[0:i]).rstrip(",，.。、 \t\r\n") + "..."
+    return s[:cut].rstrip(delimiters_c + delimiters_l) + "..."
 
 
 class IntelliDocsCommand(sublime_plugin.TextCommand):
-    last_function_name = None
-    last_found = False
-    cache = {}
-    menu_links = {}
+    last_found = {}  # type: Dict[str, Any]
+    cache = {}  # type: Dict[str, Dict[str, Dict[str, Any]]]
+    menu_links = {}  # type: Dict[int, str]
 
     def __init__(self, view: sublime.View) -> None:
         self.view = view
-        self.settings = sublime.load_settings("IntelliDocs.sublime-settings")
+        self.settings = sublime.load_settings("{}.sublime-settings".format(PACKAGE_NAME))
 
     def run(self, edit: sublime.Edit) -> None:
         # find db for lang
-        lang = self.getLang()
+        lang = self.get_lang()
 
-        if lang not in self.cache:  # DEBUG disable cache: or 1 == 1
+        if lang not in self.cache:
             try:
-                self.cache[lang] = sublime.decode_value(
-                    sublime.load_resource(
-                        "Packages/{package}/db/{lang}.json".format(package=__package__, lang=lang)
-                    )
+                self.cache[lang] = sublime.decode_value(  # type: ignore
+                    sublime.load_resource("Packages/{}/db/{}.json".format(PACKAGE_NAME, lang))
                 )
             except Exception:
                 self.cache[lang] = {}
@@ -54,53 +53,54 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
 
         # find in completions
         if completions:
-            function_names = self.getFunctionNames(completions)
-            found = False
-            for function_name in function_names:
+            found = {}  # type: Dict[str, Any]
+
+            for function_name in self.find_function_names_from_caret():
                 completion = completions.get(function_name)
                 if completion:
                     found = completion
                     break
 
-            if found:
-                self.view.set_status("hint", found["syntax"] + " | ")
-                menus = []
-
-                # Syntax
-                menus.append(found["syntax"])
-
-                # Description
-                if found["descr"]:
-                    for descr in re.sub(
-                        r"(.{80,100}[\.]) ", r"\1|||", cut_off_string(found["descr"], 350)
-                    ).split(
-                        "|||"
-                    ):  # Spit long description lines
-                        menus.append(" " + descr)
-
-                # Parameters
-                if found["params"]:
-                    menus.append("Parameters:")
-                for parameter in found["params"]:
-                    # fmt: off
-                    menus.append(
-                        " - {name}: {descr}".format(
-                            name=parameter["name"],
-                            descr=cut_off_string(parameter["descr"]),
-                        )
-                    )
-                    # fmt: on
-
-                self.last_found = found
-                self.appendLinks(menus, found)
-                self.view.show_popup_menu(menus, self.action)
-            else:
+            if not found:
                 self.view.erase_status("hint")
+                return
 
-    def getLang(self) -> str:
+            self.view.set_status("hint", found["syntax"] + " | ")
+            menus = []
+
+            # Syntax
+            menus.append(found["syntax"])
+
+            # Description
+            if found["descr"]:
+                for descr in re.sub(r"(.{80,100}[\.]) ", r"\1|||", cut_off_string(found["descr"], 350)).split(
+                    "|||"
+                ):  # Spit long description lines
+                    menus.append(" " + descr)
+
+            # Parameters
+            if found["params"]:
+                menus.append("Parameters:")
+            for parameter in found["params"]:
+                # fmt: off
+                menus.append(
+                    " - {name}: {descr}".format(
+                        name=parameter["name"],
+                        descr=cut_off_string(parameter["descr"]),
+                    )
+                )
+                # fmt: on
+
+            self.last_found = found
+            self.append_links(menus, found)
+            self.view.show_popup_menu(menus, self.action)
+
+    def get_lang(self) -> str:
+        docs = self.settings.get("docs")  # type: Dict[str, str]
+
         # try to match against the current scope
         scope = self.view.scope_name(self.view.sel()[0].b)
-        for match, lang in self.settings.get("docs").items():
+        for match, lang in docs.items():
             if re.search(match, scope):
                 return lang
 
@@ -109,10 +109,10 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
 
         return re.search(
             r"/(?P<syntax>[^/]+)\.(?:tmLanguage|sublime-syntax)$",
-            self.view.settings().get("syntax"),
+            str(self.view.settings().get("syntax")),
         ).group("syntax")
 
-    def getFunctionNames(self, completions: dict) -> list:
+    def find_function_names_from_caret(self) -> List[str]:
         # find function name
         word = self.view.word(self.view.sel()[0])
         word.a = word.a - 100  # Look back 100 character
@@ -123,11 +123,7 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
         buff = " " + buff.split("\n")[-1]
 
         # find function names ending with "("
-        matches = reversed(
-            re.findall(
-                r"(?:[0-9_\].$)]+\.[a-z0-9_.$]+|[A-Za-z0-9_.$]+)(?=\s*\()", buff, re.IGNORECASE
-            )
-        )
+        matches = reversed(re.findall(r"(?:[0-9_\].$)]+\.[a-z0-9_.$]+|[A-Za-z0-9_.$]+)(?=\s*\()", buff, re.IGNORECASE))
 
         function_names = []
         for function_name in matches:
@@ -145,18 +141,20 @@ class IntelliDocsCommand(sublime_plugin.TextCommand):
 
         return function_names
 
-    def appendLinks(self, menus: list, found: dict) -> None:
+    def append_links(self, menus: List[str], found: Dict[str, Any]) -> None:
+        help_links = self.settings.get("help_links")  # type: Dict[str, str]
+
         self.menu_links = {}
-        for pattern, link in sorted(self.settings.get("help_links").items()):
+        for pattern, link in sorted(help_links.items()):
             if re.match(pattern, found["path"]):
                 host = re.search(r"//(.*?)/", link).group(1)
-                self.menu_links[len(menus)] = link.format(**found)
+                self.menu_links[len(menus)] = link.format_map(found)
                 menus.append(" > Goto: %s" % host)
 
-    def action(self, item: str) -> None:
+    def action(self, item: int) -> None:
         if item in self.menu_links:
             webbrowser.open_new_tab(self.menu_links[item])
 
-    def debug(self, *text) -> None:
+    def debug(self, *args, **kargs) -> None:
         if self.settings.get("debug"):
-            print(*text)
+            print(*args, **kargs)
